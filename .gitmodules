@@ -1,0 +1,17 @@
+[submodule "external/RmlUi"]
+	path = external/RmlUi
+	url = https://github.com/mikke89/RmlUi.git
+	shallow = true
+[submodule "external/SDL_Mixer"]
+	path = external/SDL_Mixer
+	url = https://github.com/libsdl-org/SDL_mixer.git
+	shallow = true
+[submodule "external/freetype"]
+	path = external/freetype
+	url = https://github.com/freetype/freetype.git
+[submodule "external/SDL"]
+	path = external/SDL
+	url = https://github.com/libsdl-org/SDL
+[submodule "external/SDL_image"]
+	path = external/SDL_image
+	url = https://github.com/libsdl-org/SDL_image
