@@ -2,18 +2,26 @@
 #define GAME_COMPONENTS_H
 
 // Components
-struct Position {
-    float x = 0.0f;
-    float y = 0.0f;
+struct BoundingBox {
+    SDL_FRect box;
 };
 
 struct Velocity {
-    float x = 0.0f;
-    float y = 0.0f;
+    float x, y, s = 0.0f;
 };
 
 struct Speed {
     float value = 0.0f;
+};
+
+// Render related
+struct Sprite {
+    SDL_Texture* sprite;
+};
+
+// Input
+struct MovementInput2D {
+    Sint16 x, y;
 };
 
 // Tamaño y forma
@@ -35,5 +43,10 @@ struct Score {
 struct PlayerTag {};
 struct PaddleTag {};
 struct BallTag {};
+struct Player {};
+struct Enemy {};
+struct Bullet {};
+// Relationship structs
+struct Damages {};
 
-#endif // GAME_COMPONENTS_H
+#endif  // GAME_COMPONENTS_H

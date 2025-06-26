@@ -5,7 +5,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIGURATION>")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIGURATION>")
 set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}" CACHE INTERNAL "")
 
-project(sdl3-rmlui-template)
+project(SpaceImpact)
 
 if ((APPLE AND NOT CMAKE_SYSTEM_NAME MATCHES "Darwin") OR EMSCRIPTEN)
     set(BUILD_SHARED_LIBS OFF CACHE INTERNAL "")
@@ -58,9 +58,7 @@ if(EMSCRIPTEN)
     set(CMAKE_EXECUTABLE_SUFFIX ".html" CACHE INTERNAL "")
 endif()
 
-# Use binaries or compile from scratch
-option(USE_SDL_BINARIES "Use precompiled SDL3 and related libs" OFF)
-# SDL3 conditional integration: binaries vs source
+option(USE_SDL_BINARIES "Use precompiled SDL3 and related libs" ON)
 set(SDL3_BINARIES_PATH "../vendor/SDL3-3.2.16" CACHE PATH "Path to SDL3 precompiled binaries (should contain cmake/SDL3Config.cmake)")
 
 if(USE_SDL_BINARIES)
@@ -72,15 +70,20 @@ if(USE_SDL_BINARIES)
     find_package(SDL3 CONFIG REQUIRED)
 
     message(STATUS "Using SDL3 binary from: ${SDL3_BINARIES_PATH}")
+
+    add_custom_command(TARGET ${EXECUTABLE_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${SDL3_BINARIES_PATH}/x86_64-w64-mingw32/bin/SDL3.dll"
+        $<TARGET_FILE_DIR:${EXECUTABLE_NAME}>
+    )
 else()
     message(STATUS "Compiling SDL3 from source")
     add_subdirectory(external/SDL EXCLUDE_FROM_ALL)
 endif()
 
-# Use binaries or compile from scratch
-option(USE_SDL_IMAGE_BINARIES "Use precompiled SDL3_image and related libs" OFF)
-# SDL3_image conditional integration: binaries vs source
-set(SDL_IMAGE_BINARIES_PATH "../vendor/SDL3_image-3.2.4" CACHE PATH "Path to SDL3 precompiled binaries (should contain cmake/SDL3Config.cmake)")
+
+option(USE_SDL_IMAGE_BINARIES "Use precompiled SDL3_image and related libs" ON)
+set(SDL_IMAGE_BINARIES_PATH "../vendor/SDL3_image-3.2.4" CACHE PATH "Path to SDL3_image precompiled binaries (should contain cmake/SDL3Config.cmake)")
 
 if(USE_SDL_IMAGE_BINARIES)
     if(NOT SDL_IMAGE_BINARIES_PATH)
@@ -91,6 +94,12 @@ if(USE_SDL_IMAGE_BINARIES)
     find_package(SDL3_image CONFIG REQUIRED)
 
     message(STATUS "Using SDL3_image binary from: ${SDL_IMAGE_BINARIES_PATH}")
+
+    add_custom_command(TARGET ${EXECUTABLE_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${SDL_IMAGE_BINARIES_PATH}/x86_64-w64-mingw32/bin/SDL3_image.dll"
+        $<TARGET_FILE_DIR:${EXECUTABLE_NAME}>
+    )
 else()
     message(STATUS "Compiling SDL3_image from source")
     set(SDLIMAGE_VENDORED ON)
@@ -100,8 +109,6 @@ else()
     set(SDLIMAGE_WEBP OFF)
     add_subdirectory(external/SDL_image EXCLUDE_FROM_ALL)
 endif()
-# set(SDLTTF_VENDORED ON)
-# add_subdirectory(SDL_ttf EXCLUDE_FROM_ALL)
 
 # FreeType from submodule
 set(FT_DISABLE_ZLIB ON CACHE BOOL "" FORCE)
@@ -124,12 +131,18 @@ add_subdirectory(external/SDL_mixer EXCLUDE_FROM_ALL)
 target_compile_definitions(${EXECUTABLE_NAME} PRIVATE RMLUI_SDL_VERSION_MAJOR=3)
 add_subdirectory(external/RmlUi EXCLUDE_FROM_ALL)
 
+# Flecs
+set(FLECS_SHARED ON)
+set(FLECS_STATIC OFF)
+set(FLECS_CPP ON)
+add_subdirectory(external/flecs EXCLUDE_FROM_ALL)
+
 target_link_libraries(${EXECUTABLE_NAME} PUBLIC 
-    # SDL3_ttf::SDL3_ttf
     SDL3_mixer::SDL3_mixer
     SDL3_image::SDL3_image
     SDL3::SDL3
     RmlUi::RmlUi
+    flecs::flecs
 )
 
 if(APPLE AND NOT BUILD_SHARED_LIBS)
