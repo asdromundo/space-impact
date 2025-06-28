@@ -24,9 +24,9 @@ class RmlUiEventListener : public Rml::EventListener {
 
         if (event.GetType() == "click") {
             Mix_PlayChannel(-1, owner->enterSound, 0);
-            if (id == "solo") {
-                game::menu::EmitStartGameEvent(game::mode::SOLO);
-                SDL_LogDebug(SDL_LOG_CATEGORY_INPUT, "Solo button");
+            if (id == "single-player") {
+                game::menu::EmitStartGameEvent(game::mode::SINGLE_PLAYER);
+                SDL_LogDebug(SDL_LOG_CATEGORY_INPUT, "Single Player button");
             }
         }
     }
@@ -66,14 +66,14 @@ void MainMenuScene::OnEnter() {
     } else {
         doc->Show();
         // Conectar eventos a botones
-        Rml::Element* btn_solo = doc->GetElementById("solo");
+        Rml::Element* btn_single_player = doc->GetElementById("single-player");
 
         RmlUiEventListener* listener = new RmlUiEventListener(this);
-        if (btn_solo) {
-            btn_solo->Focus();
-            btn_solo->SetPseudoClass("focus-visible", true);
-            btn_solo->AddEventListener("click", listener);
-            btn_solo->AddEventListener("focus", listener);
+        if (btn_single_player) {
+            btn_single_player->Focus();
+            btn_single_player->SetPseudoClass("focus-visible", true);
+            btn_single_player->AddEventListener("click", listener);
+            btn_single_player->AddEventListener("focus", listener);
         }
         // if (btn_single) {
         //     btn_single->AddEventListener("click", listener);

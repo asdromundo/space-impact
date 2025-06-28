@@ -3,8 +3,8 @@
 
 #include <SDL3_mixer/SDL_mixer.h>
 
-#include "rmlui/RmlUi_Platform_SDL.h"
-#include "rmlui/RmlUi_Renderer_SDL.h"
+#include "core/ui/RmlUi_Platform_SDL.h"
+#include "core/ui/RmlUi_Renderer_SDL.h"
 
 struct AppContext {
     SDL_Window* window{nullptr};
@@ -13,8 +13,7 @@ struct AppContext {
     SDL_AppResult app_quit{SDL_APP_CONTINUE};
     RenderInterface_SDL* render_interface{nullptr};
     SystemInterface_SDL* system_interface{nullptr};
-    Rml::Context* context;
-
+    Rml::Context* context{nullptr};
     // Otros recursos globales que desees...
 };
 

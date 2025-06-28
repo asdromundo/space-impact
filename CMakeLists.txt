@@ -135,6 +135,7 @@ add_subdirectory(external/RmlUi EXCLUDE_FROM_ALL)
 set(FLECS_SHARED ON)
 set(FLECS_STATIC OFF)
 set(FLECS_CPP ON)
+add_compile_definitions(FLECS_CPP_NO_AUTO_REGISTRATION)
 add_subdirectory(external/flecs EXCLUDE_FROM_ALL)
 
 target_link_libraries(${EXECUTABLE_NAME} PUBLIC 

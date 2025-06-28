@@ -7,6 +7,7 @@
 #include <format>
 
 #include "core/scene/Events.h"
+#include "ecs/systems/systems_space_impact.h"
 
 flecs::system render_sys, input_sys;
 
@@ -16,24 +17,24 @@ GameScene::~GameScene() {
     CleanUp();
 }
 
-// AABB Collision
-inline bool isAABBColliding(const SDL_FRect& a, const SDL_FRect& b) {
-    return (a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y);
-}
-
 bool GameScene::Init() {
+    using namespace ecs;
     // flecs
     world = new flecs::world();  // Manually progress on Update()
-    world->set_threads(4);
     world->set_ctx((void*)app);  // Send it the AppContext
-    flecs::timer secondTimer = world->timer().interval(1.0);
-    float fixedTimeStep{1.0f / 60.0f};
+    float fixedTimeStep{1.0f / 12.0f};
+
+    // Register components
+    world->component<MovementInput2D>();
+    // Import systems
+    ecs::systems_space_impact::setFixedTimeStep(fixedTimeStep);
+    world->import <ecs::systems_space_impact>();
     // Register systems
     // Executed only in Render()
     render_sys = world->system<const BoundingBox, const Sprite>("Render").kind(0).each(
         [](flecs::iter& it, size_t, const BoundingBox& p, const Sprite& s) {
             AppContext* app = static_cast<AppContext*>(it.world().get_ctx());
-            SDL_RenderTexture(app->renderer, s.sprite, nullptr, &p.box);
+            SDL_RenderTexture(app->renderer, s.texture, nullptr, &p.box);
         });
     // Executed only by HandleEvent()
     input_sys = world->system<const MovementInput2D, Velocity>("NormalizeInputVelocity")
@@ -47,38 +48,6 @@ bool GameScene::Init() {
                             v.y = fy / len;
                         }
                     });
-
-    // FixedStepExecution
-    world->system<BoundingBox, const Velocity>("Move")
-        .interval(fixedTimeStep)
-        .each([](flecs::iter& it, size_t, BoundingBox& p, const Velocity& v) {
-            p.box.x += v.x * it.delta_system_time() * v.s;
-            p.box.y += v.y * it.delta_system_time() * v.s;
-            p.box.x = SDL_clamp(p.box.x, 0, 1280.0f - p.box.w);
-            p.box.y = SDL_clamp(p.box.y, 0, 720.0f - p.box.h);
-        });
-
-    world->system<Velocity>("EnemyTrayectory")
-        .with<Enemy>()
-        .interval(fixedTimeStep)
-        .each([](flecs::iter& it, size_t, Velocity& v) {
-            float time = SDL_GetTicks() / 1000.0f;
-            v.y = SDL_cosf(time) / 2;
-        });
-    // OnFlecs Lifecycle
-
-    // Query para encontrar colisiones entre jugadores y enemigos
-    flecs::query<const BoundingBox> enemies = world->query_builder<const BoundingBox>().with<Enemy>().build();
-    world->system<const BoundingBox>("PlayerCollisions")
-        .with<Player>()
-        .interval(0.5)
-        .each([enemies](const BoundingBox& player) {
-            enemies.each([player](const BoundingBox& enemy) {
-                if (isAABBColliding(player.box, enemy.box)) {
-                    SDL_Log("Collision");
-                }
-            });
-        });
 
     return true;
 }
@@ -96,6 +65,7 @@ static Size2D GetCurrentRenderSize(const AppContext* app) {
 }
 
 void GameScene::Ready() {
+    using namespace ecs;
     lastKnownRenderSize = GetCurrentRenderSize(app);
     // Fonts should be loaded before any documents are loaded.
     if (Rml::LoadFontFace("resources/fonts/monogram.ttf")) {
@@ -105,24 +75,26 @@ void GameScene::Ready() {
     SDL_Texture* enemy_sprite = IMG_LoadTexture(app->renderer, "resources/sprites/Enemy_Red_03.png");
     float speed = SDL_min(lastKnownRenderSize.width, lastKnownRenderSize.height) / 3;
     //  Register Entities
-    player = world->entity("Player 1")
-                 .add<Player>()
-                 .set<MovementInput2D>({0, 0})
-                 .set<BoundingBox>({{500.0f, 500.0f, 60.0f, 60.0f}})
-                 .set<Velocity>({0.0f, 0.0f, 256.0f})
-                 .set<Sprite>({ship_sprite});
-    world->entity("Enemy1")
-        .add<Enemy>()
-        .set<BoundingBox>({{1000.0f, 150.0f, 50.0f, 50.0f}})
-        .set<Velocity>({-1.0f, 0.0f, 128.0f})
-        .set<Sprite>({enemy_sprite});
+    if (world) {
+        player = world->entity("Player 1")
+                     .add<Player>()
+                     .set<MovementInput2D>({0, 0})
+                     .set<BoundingBox>({{500.0f, 500.0f, 60.0f, 60.0f}})
+                     .set<Velocity>({0.0f, 0.0f, 256.0f})
+                     .set<Sprite>({ship_sprite});
+        world->entity("Enemy1")
+            .add<Enemy>()
+            .set<BoundingBox>({{1000.0f, 150.0f, 50.0f, 50.0f}})
+            .set<Velocity>({-1.0f, 0.0f, 128.0f})
+            .set<Sprite>({enemy_sprite});
 
-    world->entity("Enemy2")
-        .add<Enemy>()
-        .set<BoundingBox>({{1000.0f, 600.0f, 50.0f, 50.0f}})
-        .set<Velocity>({-1.0f, 0.0f, 128.0f})
-        .set<Sprite>({enemy_sprite});
-    movement = player.get_mut<MovementInput2D>();
+        world->entity("Enemy2")
+            .add<Enemy>()
+            .set<BoundingBox>({{1000.0f, 600.0f, 50.0f, 50.0f}})
+            .set<Velocity>({-1.0f, 0.0f, 128.0f})
+            .set<Sprite>({enemy_sprite});
+        movement = player.get_mut<MovementInput2D>();
+    }
 }
 
 void GameScene::OnEnter() {
@@ -221,14 +193,18 @@ void GameScene::Update(float deltatime) {
             core::scene::events::EmitSceneFinishedEvent();  // end the scene
         }
     }
-    world->progress(deltatime);
+    if (world) {
+        world->progress(deltatime);
+    }
 }
 
 void GameScene::Render() {
     SDL_SetRenderDrawColor(app->renderer, 0x8A, 0x9A, 0x5A, SDL_ALPHA_OPAQUE);
     SDL_RenderClear(app->renderer);
 
-    render_sys.run();
+    if (world) {
+        render_sys.run();
+    }
 
     if (app->context) {
         app->context->Update();
