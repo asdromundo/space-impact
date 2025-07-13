@@ -1,0 +1,79 @@
+[gd_scene load_steps=2 format=3 uid="uid://c7iskwgu5aphr"]
+
+[ext_resource type="Script" uid="uid://0cy34ae5emr8" path="res://main.gd" id="1_i6ly2"]
+
+[node name="GameOfLife" type="Node"]
+script = ExtResource("1_i6ly2")
+
+[node name="UI" type="Control" parent="."]
+z_index = 1
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+metadata/_edit_use_anchors_ = true
+
+[node name="Background" type="ColorRect" parent="UI"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -143.0
+offset_bottom = 204.0
+grow_horizontal = 0
+color = Color(0.12941177, 0.12941177, 0.12941177, 0.8784314)
+
+[node name="VBoxContainer" type="VBoxContainer" parent="UI/Background"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -109.0
+offset_bottom = 187.0
+grow_horizontal = 0
+
+[node name="OptionButton" type="OptionButton" parent="UI/Background/VBoxContainer"]
+layout_mode = 2
+selected = 0
+item_count = 4
+popup/item_0/text = "Ninguno"
+popup/item_0/id = 0
+popup/item_1/text = "GDScript"
+popup/item_1/id = 1
+popup/item_2/text = "Base Rust"
+popup/item_2/id = 2
+popup/item_3/text = "Flecs Rust"
+popup/item_3/id = 3
+
+[node name="CellSizeLabel" type="Label" parent="UI/Background/VBoxContainer"]
+layout_mode = 2
+
+[node name="CellSizeSlider" type="HSlider" parent="UI/Background/VBoxContainer"]
+layout_mode = 2
+min_value = 1.0
+max_value = 20.0
+value = 10.0
+rounded = true
+
+[node name="UpdateTimeLabel" type="Label" parent="UI/Background/VBoxContainer"]
+layout_mode = 2
+
+[node name="UpdateTimeSlider" type="HSlider" parent="UI/Background/VBoxContainer"]
+layout_mode = 2
+max_value = 1.0
+step = 0.01000000000931322
+value = 0.5000000004656611
+
+[node name="ResetButton" type="Button" parent="UI/Background/VBoxContainer"]
+layout_mode = 2
+text = "Reiniciar"
+
+[node name="FPSCounter" type="Label" parent="UI/Background/VBoxContainer"]
+layout_mode = 2
+
+[connection signal="item_selected" from="UI/Background/VBoxContainer/OptionButton" to="." method="_on_option_button_item_selected"]
+[connection signal="value_changed" from="UI/Background/VBoxContainer/CellSizeSlider" to="." method="_on_cell_size_slider_value_changed"]
+[connection signal="value_changed" from="UI/Background/VBoxContainer/UpdateTimeSlider" to="." method="_on_update_time_slider_value_changed"]
+[connection signal="pressed" from="UI/Background/VBoxContainer/ResetButton" to="." method="_on_reset_button_pressed"]
