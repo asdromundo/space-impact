@@ -1,10 +1,9 @@
 use flecs_ecs::core::World;
 use flecs_ecs::macros::Component;
 use flecs_ecs::prelude::*;
-use godot::classes::{INode2D, Node2D, RenderingServer, Timer};
+use godot::classes::{INode2D, Node2D, Timer};
 use godot::obj::NewAlloc;
 use godot::prelude::*;
-use rand::Rng;
 
 #[derive(GodotClass)]
 #[class(base=Node2D)]
@@ -30,6 +29,12 @@ impl INode2D for GoLRustFlecs {
         let world = World::new();
         let timer = Timer::new_alloc();
 
+        // Optional, gather statistics for explorer
+        world.import::<stats::Stats>();
+
+        // Creates REST server on default port (27750)
+        world.set(flecs::rest::Rest::default());
+
         Self {
             world,
             base,
@@ -51,9 +56,8 @@ impl INode2D for GoLRustFlecs {
         self.timer.signals().timeout().connect_other(self, |this| {
             this.on_timer_timeout();
         });
-        self.base
-            .to_gd()
-            .add_child(&self.timer.clone().upcast::<Node>());
+        let t = self.timer.clone();
+        self.base_mut().add_child(&t);
 
         // Inicializar Flecs
         self.world.component::<Cell>();
@@ -79,7 +83,7 @@ impl GoLRustFlecs {
         self.update_grid_size();
 
         // Limpiar el mundo
-        self.world.delete_entities_with::<Cell>();
+        self.world.delete_entities_with(Cell::id());
 
         godot_print!("{}, {}", self.grid_width, self.grid_height);
 
@@ -103,7 +107,7 @@ impl GoLRustFlecs {
         }
 
         godot_print!("{}", cells.len());
-
+        let pos = self.world.entity();
         // Crear relaciones de vecinos
         for y in 0..self.grid_height {
             for x in 0..self.grid_width {
@@ -122,7 +126,8 @@ impl GoLRustFlecs {
                         if nx >= 0 && ny >= 0 && nx < self.grid_width && ny < self.grid_height {
                             let neighbor_idx = (ny * self.grid_width + nx) as usize;
                             let neighbor = cells[neighbor_idx];
-                            cell.add_first::<Neighbours>(neighbor);
+                            cell.add((Neighbours, neighbor));
+                            cell.add((With, pos));
                         }
                     }
                 }
@@ -134,28 +139,38 @@ impl GoLRustFlecs {
 
     fn register_systems(&mut self) {
         // Sistema para actualizar las celdas basado en las reglas del Juego de la Vida
-        let update = self
-            .world
-            .system_named::<&Cell>("update_system")
-            // .with_id((
-            //     Neighbours::id(&self.world),
-            //     flecs::Wildcard::id(&self.world),
-            // ))
-            .with_first::<Neighbours>(flecs::Wildcard::ID)
-            // .with_first::<Neighbours>(flecs::Wildcard::ID)
-            .kind_id(0)
-            .run(|mut it| {
-                let mut total = 0;
-                godot_print!("Contando celdas con Neighbours");
-
-                while it.next() {
-                    total += it.count(); // <- esto es lo correcto
-                }
-
-                godot_print!("Total de celdas: {}", total);
+        self.world
+            .system_named::<&Cell>("With")
+            .with((Neighbours, flecs::Wildcard::ID))
+            // .kind_id(0)
+            .each(|cell| {
+                let _empty_val = std::format!("Hola {}", cell.alive);
             });
 
-        update.run();
+        self.world.system_named::<&Cell>("No With").each(|cell| {
+            let _empty_val = std::format!("Hola {}", cell.alive);
+        });
+
+        // self.world
+        //     .system_named::<&Cell>("Position")
+        //     .with_first::<With>(flecs::Any::ID)
+        //     .each(|cell| {
+        //         let _empty_val = std::format!("Hola {}", cell.alive);
+        //     });
+
+        // self.world
+        //     .system_named::<&Cell>("Position cells")
+        //     .with::<Position>()
+        //     .each(|cell| {});
+
+        // self.world
+        //     .system_named::<(&Cell)>("iter_system")
+        //     .run_iter(|it, cells| {
+        //         for i in it.iter() {
+        //             let cell = &cells[i];
+        //             let _empty_val = std::format!("Hola {}", cell.alive);
+        //         }
+        //     });
 
         // // Sistema para renderizar las celdas
         // self.world
@@ -193,7 +208,7 @@ impl GoLRustFlecs {
 
     #[func]
     fn update_grid_size(&mut self) {
-        let viewport_rect = self.base.to_gd().get_viewport_rect();
+        let viewport_rect = self.base().get_viewport_rect();
         self.grid_width = (viewport_rect.size.x / self.cell_size as f32) as i64;
         self.grid_height = (viewport_rect.size.y / self.cell_size as f32) as i64;
     }
@@ -212,3 +227,6 @@ struct Cell {
 
 #[derive(Component)]
 struct Neighbours;
+
+#[derive(Component)]
+struct With;

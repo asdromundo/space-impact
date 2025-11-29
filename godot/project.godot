@@ -10,16 +10,17 @@ config_version=5
 
 [application]
 
-config/name="Godot-Rust Template Project"
+config/name="Game of Life Rust"
 run/main_scene="uid://c7iskwgu5aphr"
 config/features=PackedStringArray("4.5", "GL Compatibility")
 config/icon="uid://dcvpakna8i04d"
 
 [display]
 
-window/size/viewport_width=1200
-window/size/viewport_height=800
-window/stretch/mode="canvas_items"
+window/size/viewport_width=1920
+window/size/viewport_height=1080
+window/size/mode=4
+window/stretch/mode="viewport"
 window/vsync/vsync_mode=0
 
 [rendering]

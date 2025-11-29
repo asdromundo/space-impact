@@ -53,9 +53,8 @@ impl INode2D for GoLRust {
         });
         // add to scene
         {
-            self.base
-                .to_gd()
-                .add_child(&self.timer.clone().upcast::<Node>());
+            let t = self.timer.clone();
+            self.base_mut().add_child(&t.upcast::<Node>());
         }
     }
 
@@ -67,18 +66,20 @@ impl INode2D for GoLRust {
     }
 
     fn draw(&mut self) {
+        let cell_size_f32 = self.cell_size as f32;
+        let cell_size_usize = self.cell_size as usize;
         for y in 0..self.grid_height as usize {
             for x in 0..self.grid_width as usize {
                 if self.grid[y][x] {
-                    self.base.to_gd().draw_rect(
+                    self.base_mut().draw_rect(
                         Rect2 {
                             position: Vector2 {
-                                x: (x * self.cell_size as usize) as f32,
-                                y: (y * self.cell_size as usize) as f32,
+                                x: (x * cell_size_usize) as f32,
+                                y: (y * cell_size_usize) as f32,
                             },
                             size: Vector2 {
-                                x: self.cell_size as f32,
-                                y: self.cell_size as f32,
+                                x: cell_size_f32,
+                                y: cell_size_f32,
                             },
                         },
                         Color::SEASHELL,
@@ -121,7 +122,7 @@ impl GoLRust {
 
     #[func]
     fn update_grid_size(&mut self) {
-        let v_rec = self.base.to_gd().get_viewport_rect();
+        let v_rec = self.base().get_viewport_rect();
         self.grid_width = (v_rec.size.x / self.cell_size as f32) as i64;
         self.grid_height = (v_rec.size.y / self.cell_size as f32) as i64;
     }
